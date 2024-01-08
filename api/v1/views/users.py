@@ -1,81 +1,91 @@
 #!/usr/bin/python3
-"""This Handles all RESTful API actions for `User`"""
+"""users"""
 from api.v1.views import app_views
-from flask import jsonify, request, abort
+from flask import jsonify, abort, request
 from models import storage
 from models.user import User
-from hashlib import md5
+from datetime import datetime
+import uuid
 
 
-@app_views.route("/users")
-def users():
-    """This Function Get all users."""
-    locusers = storage.all(User)
-    locresult = []
-
-    for user in locusers.values():
-        locresult.append(user.to_dict())
-
-    return jsonify(locresult)
+@app_views.route("/users/", methods=["GET"])
+@app_views.route("/users", methods=["GET"])
+def list_users():
+    """This Function Retrieves a list of all User objects"""
+    loc_list_users = [obj.to_dict() for obj in storage.all("User").values()]
+    return jsonify(loc_list_users)
 
 
-@app_views.route("/users/<user_id>")
-def one_user(user_id):
-    """This function Get one user."""
-    locuser = storage.get(User, user_id)
-    if not locuser:
+@app_views.route("/users/<user_id>", methods=["GET"])
+def get_user(user_id):
+    """This Function Retrieves a User object"""
+    loc_all_users = storage.all("User").values()
+    loc_user_obj = [obj.to_dict() for obj in loc_all_users if obj.id == user_id]
+    if loc_user_obj == []:
         abort(404)
-
-    return jsonify(locuser.to_dict())
+    return jsonify(loc_user_obj[0])
 
 
 @app_views.route("/users/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
-    """This Function Delete user."""
-    locuser = storage.get(User, user_id)
-    if not locuser:
+    """This Function Deletes a User object"""
+    loc_all_users = storage.all("User").values()
+    loc_user_obj = [obj.to_dict() for obj in loc_all_users if obj.id == user_id]
+    if loc_user_obj == []:
         abort(404)
+    loc_user_obj.remove(loc_user_obj[0])
+    for obj in loc_all_users:
+        if obj.id == user_id:
+            storage.delete(obj)
+            storage.save()
+    return jsonify({}), 200
 
-    locuser.delete()
-    storage.save()
 
-    return jsonify({})
-
-
-@app_views.route("/users", methods=["POST"])
+@app_views.route("/users/", methods=["POST"])
 def create_user():
-    """This Function Create user."""
-    locpayload = request.get_json()
-    if not locpayload:
+    """Creates a User"""
+    if not request.get_json():
         abort(400, "Not a JSON")
-    if "email" not in locpayload:
-        abort(400, "Missing email")
-    if "password" not in locpayload:
-        abort(400, "Missing password")
-
-    user = User(**locpayload)
-    user.save()
-
-    return jsonify(user.to_dict()), 201
+    if "email" not in request.get_json():
+        abort(400, "Missing name")
+    if "password" not in request.get_json():
+        abort(400, "Missing name")
+    loc_users = []
+    loc_new_user = User(email=request.json["email"], password=request.json["password"])
+    storage.new(loc_new_user)
+    storage.save()
+    loc_users.append(loc_new_user.to_dict())
+    return jsonify(loc_users[0]), 201
 
 
 @app_views.route("/users/<user_id>", methods=["PUT"])
-def update_user(user_id):
-    """This Function Update user."""
-    user = storage.get(User, user_id)
-    payload = request.get_json()
-    if not user:
+def updates_user(user_id):
+    """This Function Updates a User object"""
+    loc_all_users = storage.all("User").values()
+    loc_user_obj = [obj.to_dict() for obj in loc_all_users if obj.id == user_id]
+    if loc_user_obj == []:
         abort(404)
-    if not payload:
-        abort(400, description="Not a JSON")
-
-    for key, value in user.to_dict().items():
-        if key not in ["id", "email", "created_at", "updated_at", "__class__"]:
-            if key in payload:
-                if key == "password":
-                    setattr(user, key, md5(str(payload[key]).encode()).hexdigest())
-                else:
-                    setattr(user, key, payload[key] if key in payload else value)
-    user.save()
-
-    return jsonify(user.to_dict())
+    if not request.get_json():
+        abort(400, "Not a JSON")
+    try:
+        loc_user_obj[0]["first_name"] = request.json["first_name"]
+    except:
+        pass
+    try:
+        loc_user_obj[0]["last_name"] = request.json["last_name"]
+    except:
+        pass
+    for obj in loc_all_users:
+        if obj.id == user_id:
+            try:
+                if request.json["first_name"] is not None:
+                    obj.first_name = request.json["first_name"]
+            except:
+                pass
+            try:
+                if request.json["last_name"] is not None:
+                    obj.last_name = request.json["last_name"]
+            except:
+                pass
+    storage.save()
+    return jsonify(loc_user_obj[0]), 200
