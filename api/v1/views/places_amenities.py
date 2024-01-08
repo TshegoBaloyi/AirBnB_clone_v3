@@ -90,3 +90,4 @@ def get_place_amenity(amenity_id):
     if loc_amenity_obj == []:
         abort(404)
     return jsonify(loc_amenity_obj[0])
+

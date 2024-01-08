@@ -92,3 +92,4 @@ def updates_review(review_id):
                 obj.text = request.json["text"]
         storage.save()
     return jsonify(loc_review_obj[0]), 200
+

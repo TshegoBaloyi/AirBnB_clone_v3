@@ -1,58 +1,34 @@
 #!/usr/bin/python3
-"""cities"""
+"""This Handles all RESTful API actions for `City`"""
 from api.v1.views import app_views
 from flask import jsonify, abort, request
 from models import storage
-from models.city import City
 from models.state import State
-from datetime import datetime
-import uuid
+from models.city import City
 
 
-@app_views.route("/states/<state_id>/cities", methods=["GET"])
-@app_views.route("/states/<state_id>/cities/", methods=["GET"])
-def list_cities_of_state(state_id):
-    """This Function Retrieves a list of all City objects"""
-    loc_all_states = storage.all("State").values()
-    loc_state_obj = [obj.to_dict() for obj in loc_all_states if obj.id == state_id]
-    if loc_state_obj == []:
+@app_views.route("/states/<state_id>/cities")
+def cities_in_a_state(state_id):
+    """This function Retrieve the list of all `City` objects of a state"""
+    locstate = storage.get(State, state_id)
+    if not locstate:
         abort(404)
-    loc_list_cities = [
-        obj.to_dict()
-        for obj in storage.all("City").values()
-        if state_id == obj.state_id
-    ]
-    return jsonify(loc_list_cities)
+
+    locresult = []
+    for city in locstate.cities:
+        locresult.append(city.to_dict())
+
+    return jsonify(locresult)
 
 
-@app_views.route("/states/<state_id>/cities", methods=["POST"])
-@app_views.route("/states/<state_id>/cities/", methods=["POST"])
-def create_city(state_id):
-    """This Function Creates a City"""
-    if not request.get_json():
-        abort(400, "Not a JSON")
-    if "name" not in request.get_json():
-        abort(400, "Missing name")
-    loc_all_states = storage.all("State").values()
-    loc_state_obj = [obj.to_dict() for obj in loc_all_states if obj.id == state_id]
-    if loc_state_obj == []:
+@app_views.route("/cities/<city_id>")
+def city(city_id):
+    """This Function Retrieve a `City`"""
+    loccity = storage.get(City, city_id)
+    if not loccity:
         abort(404)
-    loc_cities = []
-    loc_new_city = City(name=request.json["name"], state_id=state_id)
-    storage.new(loc_new_city)
-    storage.save()
-    loc_cities.append(loc_new_city.to_dict())
-    return jsonify(loc_cities[0]), 201
 
-
-@app_views.route("/cities/<city_id>", methods=["GET"])
-def get_city(city_id):
-    """This Function Retrieves a City object"""
-    loc_all_cities = storage.all("City").values()
-    loc_city_obj = [obj.to_dict() for obj in loc_all_cities if obj.id == city_id]
-    if loc_city_obj == []:
-        abort(404)
-    return jsonify(loc_city_obj[0])
+    return jsonify(loccity.to_dict())
 
 
 @app_views.route("/cities/<city_id>", methods=["DELETE"])
@@ -85,3 +61,36 @@ def updates_city(city_id):
             obj.name = request.json["name"]
     storage.save()
     return jsonify(loc_city_obj[0]), 200
+
+
+@app_views.route("/states/<state_id>/cities", methods=["POST"])
+def create_city(state_id):
+    """This Function Create a city."""
+    locstate = storage.get(State, state_id)
+    if not locstate:
+        abort(404)
+    if not request.get_json():
+        abort(400, "Not a JSON")
+    if "name" not in request.get_json():
+        abort(400, "Missing name")
+
+    loccity = City(state_id=state_id, **request.get_json())
+    loccity.save()
+
+    return jsonify(loccity.to_dict()), 201
+
+
+@app_views.route("/cities/<city_id>", methods=["PUT"])
+def update_city(city_id):
+    """This Function updates a city."""
+    loccity = storage.get(City, city_id)
+    if not loccity:
+        abort(404)
+    if not request.get_json():
+        abort(400, "Not a JSON")
+
+    key = "name"
+    setattr(loccity, key, request.get_json().get(key))
+    loccity.save()
+
+    return jsonify(loccity.to_dict())
