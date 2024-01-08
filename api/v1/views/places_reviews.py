@@ -79,13 +79,13 @@ def update_review(review_id):
 
     for key, value in locreview.to_dict().items():
         if key not in [
-            "id",
-            "user_id",
-            "place_id",
-            "created_at",
-            "updated_at",
-            "__class__",
-        ]:
+                "id",
+                "user_id",
+                "place_id",
+                "created_at",
+                "updated_at",
+                "__class__",
+                ]:
             setattr(locreview, key, locpayload[key] if key in locpayload else value)
     locreview.save()
 

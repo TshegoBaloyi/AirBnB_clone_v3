@@ -81,13 +81,13 @@ def update_place(place_id):
 
     for key, value in place.to_dict().items():
         if key not in [
-            "id",
-            "user_id",
-            "city_id",
-            "created_at",
-            "updated_at",
-            "__class__",
-        ]:
+                "id",
+                "user_id",
+                "city_id",
+                "created_at",
+                "updated_at",
+                "__class__",
+                ]:
             setattr(place, key, payload[key] if key in payload else value)
     place.save()
 
@@ -137,8 +137,8 @@ def search():
 
     keys_to_remove = ["amenities", "reviews", "amenity_ids"]
     result = [
-        {k: v for k, v in place_dict.items() if k not in keys_to_remove}
-        for place_dict in result
-    ]
+            {k: v for k, v in place_dict.items() if k not in keys_to_remove}
+            for place_dict in result
+            ]
 
     return jsonify(result)

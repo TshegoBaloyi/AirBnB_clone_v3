@@ -14,13 +14,13 @@ from models import storage
 
 
 classes = {
-    "amenities": Amenity,
-    "cities": City,
-    "places": Place,
-    "reviews": Review,
-    "states": State,
-    "users": User,
-}
+        "amenities": Amenity,
+        "cities": City,
+        "places": Place,
+        "reviews": Review,
+        "states": State,
+        "users": User,
+        }
 
 
 @app_views.route("/status")
